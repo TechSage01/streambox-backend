@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from './config/db.js';
 import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/user.routes.js';
+import movieRoutes from './routes/movie.routes.js';
 import logger from './middleware/logger.js';
 
 const app = express();
@@ -17,6 +18,7 @@ app.use(logger);
 app.get("/", (req, res) => res.json({ message: "Welcome to MovieVerse API" }));
 app.use("/api/v1/admin", adminRoutes);
 app.use('/user', userRoutes);
+app.use('/api/v1/movies', movieRoutes);
 const PORT = process.env.PORT;
 
 const startApp = async () => {

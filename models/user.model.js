@@ -5,7 +5,6 @@ let customerSchema =mongoose.Schema({
     email: {type: String, required: true, unique: [true, "Email has been taken, please choose another email"]},
     phoneNumber: {type: String, required: true, unique: true},
     password: {type: String, required: true},
-    
     isVerified: {
     type: Boolean,
     default: false

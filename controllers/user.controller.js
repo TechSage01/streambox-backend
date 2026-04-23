@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
 const buildVerificationLink = (token) => {
-    const backendBase = process.env.BACKEND_URL || `http://localhost:${process.env.PORT}`;
+    const backendBase = process.env.BACKEND_URL || `https://movieverse-backend-fjf3.onrender.com`;
     return `${backendBase}/user/verify-email?token=${token}`;
 };
 
