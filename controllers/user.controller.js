@@ -2,6 +2,7 @@ import User from '../models/user.model.js'
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 const buildVerificationLink = (token) => {
     const backendBase = process.env.BACKEND_URL || `https://movieverse-backend-fjf3.onrender.com`;
@@ -96,12 +97,21 @@ const postSignup = async (req, res) => {
             verificationToken: token,
             isVerified: false
         })
+
+        // Create a 30-day token so the frontend can remember the user
+        const authToken = jwt.sign(
+            { role: "user", id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "30d" }
+        );
+
         await sendVerificationEmail({ fullName, email, token });
         // 10. Response
         res.status(201).json({
         success: true,
         message: "Signup successful. Check your email to verify.",
-        email
+        email,
+        token: authToken
         });
     }catch(err) {
         console.log(err);
@@ -151,7 +161,7 @@ const verifyEmail = async (req, res) => {
 
 const resendVerificationEmail = async (req, res) => {
     try {
-        const { email } = req.body;
+        const email = req.body?.email || req.query?.email;
 
         if (!email) {
             return res.status(400).json({
@@ -160,19 +170,21 @@ const resendVerificationEmail = async (req, res) => {
             });
         }
 
-        const user = await User.findOne({ email });
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
 
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
+            // Friendly response to avoid forcing users back to signup flow.
+            return res.status(200).json({
+                success: true,
+                message: "If this email exists and is not verified, a verification email has been sent."
             });
         }
 
         if (user.isVerified) {
-            return res.status(400).json({
-                success: false,
-                message: "Email is already verified"
+            return res.status(200).json({
+                success: true,
+                message: "This email is already verified. Please sign in."
             });
         }
 
@@ -261,9 +273,18 @@ const postSignin = async (req, res) => {
                 message: "Please verify your email before signing in"
             });
         }
+
+        // Create a token after login
+        const token = jwt.sign(
+            { role: "user", id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "30d" }
+        );
+
         return res.status(200).json({
             success: true,
             message: "Login successful",
+            token,
             user: {
                 id: user._id,
                 fullName: user.fullName,
