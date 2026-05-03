@@ -1,7 +1,21 @@
 import Movie from '../models/movie.model.js';
+import User from "../models/user.model.js";
 
 const API_KEY = process.env.TMDB_API_KEY;
 
+// GET /api/v1/movies/user/:uid - Get user profile by UID
+export const getUserProfile = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const user = await User.findOne({ uid });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    return res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
 // Get all movies
 export const getAllMovies = async (req, res) => {
     const { page } = req.params;

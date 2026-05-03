@@ -11,8 +11,22 @@ let customerSchema =mongoose.Schema({
   },
   verificationToken: String,
   resetPasswordToken: String,
-  resetPasswordExpires: Date
-})
+  resetPasswordExpires: Date,
+
+  // subscription fields 
+  isSubscribed: {
+    type: Boolean,
+    default: false
+  },
+  subscriptionPlan: {
+    type: String,
+    enum: ['basic', 'premium', 'pro'], default: 'null'     
+  },
+  subscriptionExpiry: { 
+    type: Date,
+    default: null
+  }
+}, { timestamps: true })
 
 const User = mongoose.model("User", customerSchema);
 

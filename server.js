@@ -6,6 +6,7 @@ import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/user.routes.js';
 import movieRoutes from './routes/movie.routes.js';
 import logger from './middleware/logger.js';
+import subscriptionRoutes from "./routes/subscription.routes.js"
 
 
 const app = express();
@@ -20,6 +21,7 @@ app.get("/", (req, res) => res.json({ message: "Welcome to MovieVerse API" }));
 app.use("/api/v1/admin", adminRoutes);
 app.use('/user', userRoutes);
 app.use('/api/v1/movies', movieRoutes);
+app.use("/api/v1/subscription", subscriptionRoutes);
 
 const PORT = process.env.PORT;
 

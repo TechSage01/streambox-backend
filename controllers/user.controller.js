@@ -404,6 +404,162 @@ const resetPassword = async (req, res) => {
     }
 };
 
+export const getCurrentUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('fullName email phoneNumber');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                fullName: user.fullName,
+                email: user.email,
+                phoneNumber: user.phoneNumber
+            }
+        });
+    } catch (error) {
+        console.error('getCurrentUserProfile error', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
+
+export const updateUserSettings = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        const phoneNumber = typeof req.body.phoneNumber === 'string' ? req.body.phoneNumber.trim() : '';
+        const currentPassword = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
+        const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
+        const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
+        const updates = {};
+
+        if (phoneNumber) {
+            if (phoneNumber !== user.phoneNumber) {
+                const existingPhone = await User.findOne({
+                    phoneNumber,
+                    _id: { $ne: user._id }
+                });
+
+                if (existingPhone) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Phone number already exists'
+                    });
+                }
+
+                updates.phoneNumber = phoneNumber;
+            }
+        }
+
+        if (newPassword || confirmPassword || currentPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Current password is required to change your password'
+                });
+            }
+
+            if (!newPassword || !confirmPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'New password and confirm password are required'
+                });
+            }
+
+            if (newPassword !== confirmPassword) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Passwords do not match'
+                });
+            }
+
+            if (newPassword.length < 6) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Password must be at least 6 characters long'
+                });
+            }
+
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+            if (!isCurrentPasswordValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Current password is incorrect'
+                });
+            }
+
+            updates.password = await bcrypt.hash(newPassword, 10);
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No changes provided'
+            });
+        }
+
+        Object.assign(user, updates);
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Settings updated successfully',
+            user: {
+                id: user._id,
+                fullName: user.fullName,
+                email: user.email,
+                phoneNumber: user.phoneNumber
+            }
+        });
+    } catch (error) {
+        console.error('updateUserSettings error', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error'
+        });
+    }
+};
+// Get user profile by email (used by frontend after Firebase auth)
+export const getUserProfile = async (req, res) => {
+    try {
+        const email = req.query.email;
+        console.log("Looking for email:", email); // ← add this
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+
+        const user = await User.findOne({ email }).select('fullName email');
+        console.log("Found user:", user); // ← add this
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        return res.status(200).json({ success: true, data: { fullName: user.fullName, email: user.email } });
+    } catch (error) {
+        console.error('getUserProfile error', error);
+        return res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
 export {
     postSignup,
     verifyEmail,
